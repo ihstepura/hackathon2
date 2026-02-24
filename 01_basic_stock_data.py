@@ -10,9 +10,12 @@ Run this file:  python 01_basic_stock_data.py
 """
 
 from financetoolkit import Toolkit
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # ── 1. Setup ──────────────────────────────────────────────────────────
-API_KEY = "wybWEsp1oB9abHfz3yPpQYwffxaN21B7"
+API_KEY = os.environ.get("FMP_API_KEY", "")
 
 # You can pass one ticker or a list of tickers.
 # start_date limits how far back data goes.

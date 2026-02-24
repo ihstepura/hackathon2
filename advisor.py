@@ -5,8 +5,11 @@ Analyzes Technicals + News to suggest Long, Short, or Hedge positions.
 import technical_analyzer
 import news_analyzer
 import sys
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-API_KEY = "wybWEsp1oB9abHfz3yPpQYwffxaN21B7"
+API_KEY = os.environ.get("FMP_API_KEY", "")
 
 def get_user_input():
     print("\n=== Financial Advisor (Bi-Directional Hedge Edition) ===")

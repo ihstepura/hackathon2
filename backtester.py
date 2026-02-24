@@ -10,9 +10,12 @@ import pandas as pd
 import numpy as np
 from financetoolkit import Toolkit
 import sys
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Constants
-API_KEY = "wybWEsp1oB9abHfz3yPpQYwffxaN21B7"
+API_KEY = os.environ.get("FMP_API_KEY", "")
 TICKERS = ["^NSEBANK", "NVDA", "TSLA"]
 MONTHLY_BUDGET = 300.0
 

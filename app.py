@@ -13,7 +13,9 @@ import openpyxl
 from io import BytesIO
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
-import json, traceback, time, math
+import json, traceback, time, math, os
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -40,11 +42,11 @@ def safe_jsonify(data, status=200):
     text = text.replace(': -Infinity', ': null').replace(':-Infinity', ':null')
     return Response(text, status=status, mimetype='application/json')
 
-FMP_API_KEY = "wybWEsp1oB9abHfz3yPpQYwffxaN21B7"
-GEMINI_API_KEY = "AIzaSyBX8v2d_UV_Hktcj-AvV7TyR6TD5grn24w"  # fallback
-ALPHA_VANTAGE_KEY = "P0D5N0A8SVC00YUW"
-FINNHUB_KEY = "d6ao9dhr01qqjvbr6m1gd6ao9dhr01qqjvbr6m20"
-FRED_KEY = "010a35b0ca89efdef4234f33c5089d7a"
+FMP_API_KEY = os.environ.get("FMP_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+ALPHA_VANTAGE_KEY = os.environ.get("ALPHA_VANTAGE_KEY", "")
+FINNHUB_KEY = os.environ.get("FINNHUB_API_KEY", "")
+FRED_KEY = os.environ.get("FRED_API_KEY", "")
 
 # ── AI Backend: Ollama (local) with Gemini fallback ──────
 OLLAMA_URL = "http://localhost:11434"

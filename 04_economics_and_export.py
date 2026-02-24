@@ -9,8 +9,11 @@ Run this file:  python 04_economics_and_export.py
 """
 
 from financetoolkit import Toolkit
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-API_KEY = "wybWEsp1oB9abHfz3yPpQYwffxaN21B7"
+API_KEY = os.environ.get("FMP_API_KEY", "")
 
 companies = Toolkit(
     tickers=["AAPL"],
