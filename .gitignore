@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.gemini/
+
+# Environment Variables & Secrets
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Database (local state)
+portfolio.db
+portfolio.db-wal
+portfolio.db-shm
+
+# Data exports
+*.xlsx
+*.csv
+!sample_data/
+
+# Assignment PDFs
+*.pdf
