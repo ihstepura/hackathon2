@@ -71,7 +71,7 @@ A full-stack financial analytics web application built with **Flask**, **yfinanc
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/FinanceIQ.git
+git clone https://github.com/vanshshah10002-prog/FinanceIQ.git
 cd FinanceIQ
 
 # Install dependencies
