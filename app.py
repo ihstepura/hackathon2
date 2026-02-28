@@ -1195,25 +1195,6 @@ def sector_heatmap():
         traceback.print_exc()
         return safe_jsonify({"error": str(e)}), 500
 
-# ── Route: Currency Conversion Rates ─────────────────────
-@app.route("/api/currency", methods=["POST"])
-def currency_rates():
-    """Return conversion rates from USD to GBP/INR so the frontend can convert all values."""
-    try:
-        import requests as req
-        url = f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=GBP&apikey={ALPHA_VANTAGE_KEY}"
-        resp = req.get(url, timeout=10).json()
-        usd_gbp = float(resp.get("Realtime Currency Exchange Rate", {}).get("5. Exchange Rate", 0.79))
-    except:
-        usd_gbp = 0.79  # Fallback
-    try:
-        import requests as req
-        url = f"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=INR&apikey={ALPHA_VANTAGE_KEY}"
-        resp = req.get(url, timeout=10).json()
-        usd_inr = float(resp.get("Realtime Currency Exchange Rate", {}).get("5. Exchange Rate", 83.5))
-    except:
-        usd_inr = 83.5
-    return safe_jsonify({"USD": 1.0, "GBP": usd_gbp, "INR": usd_inr})
 
 # ── Route: Options Chain (with Greeks) ───────────────────
 @app.route("/api/options/chain", methods=["POST"])
@@ -1624,35 +1605,26 @@ def market_summary():
         result = {}
         for category, items in symbols.items():
             cat_list = []
-            tickers_str = " ".join([s[0] for s in items])
-            try:
-                data = yf.download(tickers_str, period="2d", group_by="ticker", progress=False)
-                for sym, name in items:
-                    try:
-                        if len(items) == 1:
-                            df = data
-                        else:
-                            df = data[sym] if sym in data.columns.get_level_values(0) else None
-
-                        if df is not None and len(df) >= 1:
-                            latest = df.iloc[-1]
-                            prev = df.iloc[-2] if len(df) >= 2 else df.iloc[-1]
-                            price = float(latest["Close"])
-                            prev_close = float(prev["Close"])
-                            change = price - prev_close
-                            change_pct = (change / prev_close * 100) if prev_close else 0
-                            cat_list.append({
-                                "symbol": sym, "name": name,
-                                "price": round(price, 2),
-                                "change": round(change, 2),
-                                "change_pct": round(change_pct, 2),
-                            })
-                        else:
-                            cat_list.append({"symbol": sym, "name": name, "price": 0, "change": 0, "change_pct": 0})
-                    except Exception:
+            for sym, name in items:
+                try:
+                    ticker = yf.Ticker(sym)
+                    hist = ticker.history(period="5d")
+                    if hist is not None and len(hist) >= 1:
+                        latest = hist.iloc[-1]
+                        prev = hist.iloc[-2] if len(hist) >= 2 else hist.iloc[-1]
+                        price = float(latest["Close"])
+                        prev_close = float(prev["Close"])
+                        change = price - prev_close
+                        change_pct = (change / prev_close * 100) if prev_close else 0
+                        cat_list.append({
+                            "symbol": sym, "name": name,
+                            "price": round(price, 2),
+                            "change": round(change, 2),
+                            "change_pct": round(change_pct, 2),
+                        })
+                    else:
                         cat_list.append({"symbol": sym, "name": name, "price": 0, "change": 0, "change_pct": 0})
-            except Exception:
-                for sym, name in items:
+                except Exception:
                     cat_list.append({"symbol": sym, "name": name, "price": 0, "change": 0, "change_pct": 0})
             result[category] = cat_list
 

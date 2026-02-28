@@ -1,0 +1,35 @@
+# Backend dependencies for FinanceIQ v6
+fastapi>=0.133.0
+uvicorn[standard]>=0.41.0
+sqlalchemy>=2.0.47
+asyncpg>=0.30.0
+psycopg2-binary>=2.9.9
+redis>=7.2.0
+python-dotenv>=1.0.0
+httpx>=0.28.0
+sse-starlette>=2.3.0
+alembic>=1.14.0
+pydantic-settings>=2.7.0
+
+# Data & Finance
+yfinance>=1.0
+financetoolkit>=2.0
+pandas>=2.2.0
+numpy>=1.26.0
+requests>=2.31.0
+
+# AI & ML
+torch>=2.0.0
+ollama>=0.2.0
+
+# Hackathon Scraping & Data
+sec-api>=1.0.17
+praw>=7.7.1
+ntscraper>=0.3.1
+
+# NLP
+transformers>=4.40.0
+
+# Utilities
+openpyxl>=3.1.0
+feedparser>=6.0.0

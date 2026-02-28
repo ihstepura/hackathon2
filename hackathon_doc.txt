@@ -1,0 +1,52 @@
+Finance Hackathon Brainstorming Session
+User: You are a financhackthon expert who has won multiple financehackthon. I want you to see the problem statement that I have uploaded as a screenshort and help me with the problem, what to build, what are the real problem, how to bulid, for whom to build
+AI: As a hackathon veteran who has been through exactly these types of competitions, I'd be absolutely thrilled to help you strategize.
+Looking at the problem statement from the Warwick Finance Societies Fintech Hackathon: Category 1: Data in Finance
+"Financial markets generate vast amounts of data, yet turning that information into meaningful insight remains a challenge. Build a tool using financial data to inform decision-making or identify opportunities."
+This is a classic "Information Asymmetry" and "Signal vs. Noise" challenge. Judges for this category will be looking for projects that don't just display data, but use data to generate an actionable insight that a human would have missed or spent hours finding.
+1. What are the "Real Problems"?
+•	The "Signal vs. Noise" Crisis: Investors are drowning in data (SEC filings, Reddit threads, news articles, macroeconomic indicators). Filtering out hype to find the fundamental truth takes too much time.
+•	The Alternative Data Gap: Institutional hedge funds spend millions on "alternative data" (scraping Glassdoor, satellite imagery). Regular investors don't have this "edge."
+•	Context-less Information: Most financial apps tell you what happened (e.g., "AAPL dropped 3%"). Very few tell you why it happened or what to do about it.
+2. For Whom to Build? (The Target Persona)
+•	The Advanced Retail Investor: The "prosumer" trader who knows the basics (P/E ratios, moving averages) but gets overwhelmed trying to read 50-page 10-K reports. [Recommended]
+•	Small-to-Medium Portfolio Managers: Financial advisors who manage money for clients but don't have access to $24,000/year Bloomberg Terminals.
+3. What to Build? (Top 3 Winning Ideas)
+•	🏆 Idea 1: "AlphaFilter" (Alternative Data Sentiment Engine) [Highly Recommended]
+What it does: A dashboard where a user enters a stock ticker. It instantly scrapes recent news, Reddit, and insider sales, and feeds it to an LLM to calculate a "Hidden Sentiment Score".
+Wow Factor: Plotting AI-generated "News Sentiment" overlaid on top of the stock's price chart to show that negative news spikes before price drops.
+•	Idea 2: "FilingCopilot" (The SEC 10-K Risk Auditor)
+What it does: Digests dense SEC 10-K filings or Earnings Calls to highlight hidden risks, supply chain issues, or forward-looking statements buried deep inside the text.
+•	Idea 3: "GreenWash-Spotter" (True ESG Analyzer)
+What it does: Compares a company's self-reported ESG (Environmental, Social, Governance) goals with real-world news controversies and EPA fines.
+4. How to Build It? (Tech Stack & Execution)
+•	Backend: Python (FastAPI or Flask)
+•	Frontend: Next.js or React with Tailwind CSS. Make it look like a modern Bloomberg Terminal (dark mode).
+•	Financial Data Sources: yfinance, Finnhub API, Alpaca API
+•	Unstructured Data APIs: NewsAPI, SEC EDGAR API
+•	AI/Insight Layer: OpenAI API (GPT-4o-mini) to return structured JSON sentiment analysis.
+The Winning Execution Strategy:
+1	Start with the APIs (Hours 1-6): Prove that you can pull data and send it to OpenAI to get a sentiment score back.
+2	Build the Dashboard (Hours 6-16): Connect the frontend to the backend. Make charts look heavily institutional.
+3	Perfect the Pitch & Demo (Final Hours): Focus 1 minute on the problem, 1 minute on the demo, and 1 minute on the business model. Record a video fallback!
+User: Okay got your point suppose if I decide that I want to build idea 1 but many of the other team would be building something similar, how would I differeniate between my protype and there what could be my USP how to make sure that I stand out
+AI: It is a brilliant realization that many average teams will build a basic "Sentiment Analyzer." To win a hackathon, your prototype needs a "killer feature" (USP - Unique Selling Proposition) that proves your tool doesn't just read the news—it understands the market mechanics.
+Here are 4 ways to differentiate "AlphaFilter" and make the judges remember your project:
+1. The "Signal Decay" Metric (The Quant USP)
+What others will do: "Apple had good news today, so sentiment is Positive."
+Your USP: News matters less as time passes. If a great earnings report came out 48 hours ago, the "alpha" (the edge) is gone because the market has already priced it in.
+How to build it: Introduce a "Signal Decay" metric. If news broke 10 minutes ago, score is 95/100. If 2 days ago, it decays to 10/100.
+2. The "Contrarian / Divergence" Alert (The Trader USP)
+What others will do: "Sentiment is bad, so don't buy."
+Your USP: The best traders look for divergences—when the stock price does the opposite of the news (e.g., terrible news but price doesn't drop implies strong support).
+How to build it: Compare trailing 3-day Price Action with 3-day Sentiment Score. Flag "Teflon Stocks" (price UP, sentiment DOWN) or "Value Traps" (price DOWN, sentiment UP).
+3. "Entity Extraction" & Supply Chain Contagion (The Institutional USP)
+What others will do: Analyze news only about the target ticker (e.g., TSLA).
+Your USP: A sophisticated tool understands supply chain contagion. If a lithium mine burns down, it affects Tesla.
+How to build it: Use an LLM to map a target's top 3 suppliers/competitors and pull news for those entities as well.
+4. Over-the-Top "Institutional" UI/UX (The Visual USP)
+What others will do: Basic bright white React app.
+Your USP: Make it look like a multi-million-dollar hedge fund tool. Humans are visual, and judges are drawn to apps that look expensive and production-ready.
+How to build it: Terminal aesthetic. Pitch-black backgrounds, neon accents (profitable green `#00ff88`, sharp red `#ff3366`), monospace fonts, dense data without too much whitespace, and "ticking" numbers.
+How to pitch it to guarantee a podium spot:
+"Most data analytics tools in finance fail because they suffer from the 'so what?' problem. They show retail investors a sentiment score and leave them to guess what to do. AlphaFilter doesn't just report the sentiment; it identifies the divergence between public narrative and price action, scoring the half-life of that information to give users a definitive, actionable window."
