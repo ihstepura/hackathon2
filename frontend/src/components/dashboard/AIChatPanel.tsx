@@ -21,9 +21,14 @@ export function AIChatPanel() {
     const ticker = useAtomValue(activeTickerAtom);
     const [history, setHistory] = useAtom(chatHistoryAtom);
     const [input, setInput] = useState('');
-    const [searchFilter, setSearchFilter] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Clear chat when ticker changes
+    useEffect(() => {
+        setHistory([]);
+        setInput('');
+    }, [ticker, setHistory]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -71,9 +76,7 @@ export function AIChatPanel() {
         sendMessage(input);
     };
 
-    const filteredHistory = searchFilter
-        ? history.filter(m => m.content.toLowerCase().includes(searchFilter.toLowerCase()))
-        : history;
+
 
     return (
         <div className="chat-panel">
@@ -98,20 +101,6 @@ export function AIChatPanel() {
                 </button>
             </div>
 
-            {/* Search filter */}
-            <div className="chat-search-wrap">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <input
-                    type="text"
-                    placeholder="Search chat…"
-                    className="chat-search-input"
-                    value={searchFilter}
-                    onChange={(e) => setSearchFilter(e.target.value)}
-                    aria-label="Search chat history"
-                />
-            </div>
 
             {/* Prompt chips */}
             <div className="chat-chips">
@@ -129,7 +118,7 @@ export function AIChatPanel() {
 
             {/* Messages */}
             <div className="chat-messages">
-                {filteredHistory.length === 0 && !searchFilter && (
+                {history.length === 0 && (
                     <div className="chat-empty">
                         <div className="chat-empty-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -141,13 +130,7 @@ export function AIChatPanel() {
                     </div>
                 )}
 
-                {filteredHistory.length === 0 && searchFilter && (
-                    <div className="chat-empty">
-                        <p>No messages matching &quot;{searchFilter}&quot;</p>
-                    </div>
-                )}
-
-                {filteredHistory.map((msg) => (
+                {history.map((msg) => (
                     <div key={msg.id} className={`chat-message ${msg.role}`}>
                         <div className="chat-message-label">
                             {msg.role === 'user' ? 'You' : 'AI'}
