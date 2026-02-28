@@ -1,9 +1,10 @@
 """
 FinanceIQ v6 — News & Sentiment Service
-Ported from legacy news_analyzer.py. Uses Google News RSS + VADER.
+Uses Google News RSS + FinBERT for financial sentiment analysis.
 """
 import feedparser
 from datetime import datetime
+from core.logging import logger
 
 
 def fetch_news(ticker: str, limit: int = 10) -> list[dict]:
@@ -23,7 +24,7 @@ def fetch_news(ticker: str, limit: int = 10) -> list[dict]:
             })
         return items
     except Exception as e:
-        print(f"News fetch error: {e}")
+        logger.error(f"News fetch error: {e}")
         return []
 
 
@@ -35,7 +36,7 @@ def get_finbert():
         from transformers import pipeline
         import warnings
         warnings.filterwarnings("ignore")
-        print("Lazy loading FinBERT model...")
+        logger.info("Lazy loading FinBERT model...")
         _finbert_pipeline = pipeline("sentiment-analysis", model="ProsusAI/finbert")
     return _finbert_pipeline
 
@@ -47,7 +48,7 @@ def analyze_sentiment(news_items: list[dict]) -> dict:
     try:
         analyzer = get_finbert()
     except Exception as e:
-        print(f"FinBERT load error: {e}")
+        logger.error(f"FinBERT load error: {e}")
         return {"average_score": 0, "sentiment_label": "Neutral", "scored_news": news_items}
 
     total = 0

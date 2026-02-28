@@ -240,7 +240,7 @@ def compute_sentiment_score(ticker: str) -> tuple[float, list[AgentEvent]]:
         return 5.0, events
 
     events.append(AgentEvent("thinking", "Sentiment Analyst",
-                             f"Analyzing {len(news_items)} articles with VADER NLP..."))
+                             f"Analyzing {len(news_items)} articles with FinBERT NLP..."))
 
     scored = sentiment.get("scored_news", [])
     for item in scored[:5]:

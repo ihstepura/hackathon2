@@ -53,7 +53,7 @@ export function AIChatbot() {
         setIsLoading(true);
 
         try {
-            const res = await fetch('http://localhost:8004/api/ai/chat', {
+            const res = await fetch('http://localhost:8000/api/ai/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

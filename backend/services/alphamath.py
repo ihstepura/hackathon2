@@ -1,8 +1,8 @@
 """
-FinanceIQ - Hacker Edition
-AlphaMath: Signal Decay Engine (Temporal Exponential Decay)
+FinanceIQ v6 — AlphaMath: Signal Decay Engine (Temporal Exponential Decay)
 """
 from datetime import datetime, timezone
+from core.logging import logger
 import math
 
 def calculate_time_decay(published_time_str: str, half_life_hours: float = 24.0) -> float:
@@ -58,7 +58,7 @@ def calculate_time_decay(published_time_str: str, half_life_hours: float = 24.0)
             
         return round(multiplier, 4)
     except Exception as e:
-        print(f"Time decay error: {e}")
+        logger.error(f"Time decay error: {e}")
         return 1.0
 
 def apply_signal_decay(scored_items: list[dict], half_life_hours: float = 24.0) -> list[dict]:

@@ -1,22 +1,43 @@
 """
 FinanceIQ v6 — FastAPI Main Application
 """
+import asyncio
+import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from concurrent.futures import ThreadPoolExecutor
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from core import get_settings, engine, Base
+from fastapi.middleware.gzip import GZipMiddleware
+from core import get_settings, engine, Base, logger
 
 settings = get_settings()
 
 
+def _preload_models():
+    """Preload heavy ML models at startup (runs in background thread)."""
+    try:
+        from services.news_service import get_finbert
+        logger.info("Preloading FinBERT sentiment model...")
+        get_finbert()
+        logger.info("FinBERT ready.")
+    except Exception as e:
+        logger.warning(f"FinBERT preload failed (non-fatal): {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: create tables. Shutdown: dispose engine."""
+    """Startup: create tables + preload models. Shutdown: dispose engine."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    print(f"\n  {settings.APP_NAME} v{settings.APP_VERSION}")
-    print(f"  Backend: http://localhost:8000")
-    print(f"  Docs:    http://localhost:8000/docs\n")
+
+    # Preload FinBERT in background thread (non-blocking)
+    executor = ThreadPoolExecutor(max_workers=1)
+    loop = asyncio.get_event_loop()
+    loop.run_in_executor(executor, _preload_models)
+
+    logger.info(f"{settings.APP_NAME} v{settings.APP_VERSION}")
+    logger.info("Backend: http://localhost:8000")
+    logger.info("Docs:    http://localhost:8000/docs")
     yield
     await engine.dispose()
 
@@ -24,7 +45,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
+    lifespan=lifespan,
 )
+
+# ── Compression ───────────────────────────────────────
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ── CORS ──────────────────────────────────────────────
 app.add_middleware(
@@ -34,6 +59,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ── Request Logging Middleware ────────────────────────
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration_ms = (time.perf_counter() - start) * 1000
+    logger.info(
+        f"{request.method} {request.url.path} "
+        f"status={response.status_code} "
+        f"duration={duration_ms:.1f}ms"
+    )
+    response.headers["X-Response-Time"] = f"{duration_ms:.1f}ms"
+    return response
 
 
 # ── Mount Routers ─────────────────────────────────────

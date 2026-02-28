@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # ── AI Backend ────────────────────────────────────
     OLLAMA_URL: str = "http://localhost:11434"
     AI_MODEL: str = "gemini-2.0-flash"
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # ── App ───────────────────────────────────────────
     APP_NAME: str = "FinanceIQ"

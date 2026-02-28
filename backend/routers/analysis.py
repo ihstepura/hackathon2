@@ -243,7 +243,7 @@ async def get_contagion(ticker: str):
     except Exception:
         peer_sentiment = 0.0
 
-    analysis = analyze_supply_chain_contagion(ticker.upper(), peer_sentiment)
+    analysis = await analyze_supply_chain_contagion(ticker.upper(), peer_sentiment)
     
     await cache_set(cache_key, analysis, ttl=86400) # 24 hr cache for sec filings
     return analysis

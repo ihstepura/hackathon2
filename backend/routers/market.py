@@ -2,18 +2,44 @@
 FinanceIQ v6 — Market Router
 Global market overview and indices data.
 """
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import APIRouter
 from core import cache_get, cache_set
 import yfinance as yf
-import traceback
 
 router = APIRouter()
+
+_executor = ThreadPoolExecutor(max_workers=8)
+
+
+async def _fetch_ticker(sym: str, name: str) -> dict:
+    """Run blocking yfinance call in thread pool."""
+    loop = asyncio.get_event_loop()
+
+    def _sync():
+        try:
+            ticker = yf.Ticker(sym)
+            hist = ticker.history(period="5d")
+            if hist is not None and len(hist) >= 1:
+                latest = hist.iloc[-1]
+                prev = hist.iloc[-2] if len(hist) >= 2 else latest
+                price = float(latest["Close"])
+                prev_close = float(prev["Close"])
+                change = price - prev_close
+                pct = (change / prev_close * 100) if prev_close else 0
+                return {"symbol": sym, "name": name, "price": round(price, 2),
+                        "change": round(change, 2), "change_pct": round(pct, 2)}
+        except Exception:
+            pass
+        return {"symbol": sym, "name": name, "price": 0, "change": 0, "change_pct": 0}
+
+    return await loop.run_in_executor(_executor, _sync)
 
 
 @router.get("/market/pulse")
 async def market_pulse():
     """Global market snapshot: indices, commodities, currencies."""
-    # Check cache (5-min)
     cached = await cache_get("market:pulse")
     if cached:
         return cached
@@ -34,31 +60,18 @@ async def market_pulse():
         ],
     }
 
-    result = {}
+    tasks = []
+    categories_map = {}
     for category, items in symbols.items():
-        cat_list = []
         for sym, name in items:
-            try:
-                ticker = yf.Ticker(sym)
-                hist = ticker.history(period="5d")
-                if hist is not None and len(hist) >= 1:
-                    latest = hist.iloc[-1]
-                    prev = hist.iloc[-2] if len(hist) >= 2 else hist.iloc[-1]
-                    price = float(latest["Close"])
-                    prev_close = float(prev["Close"])
-                    change = price - prev_close
-                    change_pct = (change / prev_close * 100) if prev_close else 0
-                    cat_list.append({
-                        "symbol": sym, "name": name,
-                        "price": round(price, 2),
-                        "change": round(change, 2),
-                        "change_pct": round(change_pct, 2),
-                    })
-                else:
-                    cat_list.append({"symbol": sym, "name": name, "price": 0, "change": 0, "change_pct": 0})
-            except Exception:
-                cat_list.append({"symbol": sym, "name": name, "price": 0, "change": 0, "change_pct": 0})
-        result[category] = cat_list
+            tasks.append(_fetch_ticker(sym, name))
+            categories_map[len(tasks) - 1] = category
+
+    results_list = await asyncio.gather(*tasks)
+
+    result = {"indices": [], "commodities": [], "currencies": []}
+    for i, data in enumerate(results_list):
+        result[categories_map[i]].append(data)
 
     await cache_set("market:pulse", result, ttl=300)
     return result

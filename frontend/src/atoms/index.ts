@@ -3,6 +3,8 @@
  * Global state management for security groups, ticker, and layout.
  */
 import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
+import type { ChatMessage } from '@/lib/mock-data';
 
 // ── Security Group System ─────────────────────────────
 // Widgets link to groups (A, B, C). Changing ticker in one widget
@@ -34,6 +36,10 @@ export const activeTickerAtom = atom(
 export const commandPaletteOpenAtom = atom(false);
 export const sidebarCollapsedAtom = atom(false);
 export const aiChatbotOpenAtom = atom(false);
+export const rightDrawerOpenAtom = atom(false);
+
+// ── Chat History (persisted to localStorage) ──────────
+export const chatHistoryAtom = atomWithStorage<ChatMessage[]>('financeiq-chat-history', []);
 
 // ── Analysis Data Cache ───────────────────────────────
 export const analysisDataAtom = atom<any | null>(null);

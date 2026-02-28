@@ -1,9 +1,9 @@
 """
-FinanceIQ - Hacker Edition
-Alternative Data Scrapers (Reddit & Twitter)
+FinanceIQ v6 — Alternative Data Scrapers (Reddit & Twitter)
 """
 import os
 import praw
+from core.logging import logger
 from ntscraper import Nitter
 from datetime import datetime
 
@@ -43,7 +43,7 @@ def fetch_reddit_sentiment(ticker: str, limit: int = 15) -> list[dict]:
                 continue
         return items
     except Exception as e:
-        print(f"Reddit fetch error: {e}")
+        logger.error(f"Reddit fetch error: {e}")
         return []
 
 def fetch_twitter_sentiment(ticker: str, limit: int = 10) -> list[dict]:
@@ -65,7 +65,7 @@ def fetch_twitter_sentiment(ticker: str, limit: int = 10) -> list[dict]:
                 })
         return items
     except Exception as e:
-        print(f"Twitter fetch error: {e}")
+        logger.error(f"Twitter fetch error: {e}")
         return []
 
 def aggregate_social_data(ticker: str, limit: int = 20) -> list[dict]:
