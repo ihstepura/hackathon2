@@ -7,7 +7,8 @@ import { useAtomValue } from 'jotai';
 import { activeTickerAtom } from '@/atoms';
 import { fetchFundamentals, type Fundamentals } from '@/lib/api';
 
-function fmt(n: number, type: 'currency' | 'pct' | 'num' | 'bigcur' = 'num'): string {
+function fmt(n: number | null | undefined, type: 'currency' | 'pct' | 'num' | 'bigcur' = 'num'): string {
+    if (n == null || isNaN(n)) return 'N/A';
     if (type === 'currency') return `$${n.toFixed(2)}`;
     if (type === 'pct') return `${(n * 100).toFixed(1)}%`;
     if (type === 'bigcur') {
