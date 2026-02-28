@@ -226,7 +226,7 @@ export async function fetchPrediction(symbol: string): Promise<PredictionResult>
 
     return {
         direction,
-        confidence: Math.min(Math.abs(pctChange) * 5 + 60, 95), // scale to 60-95 range
+        confidence: Math.min(Math.abs(pctChange) * 5 + 60, 95) / 100, // normalize to 0-1 range
         currentPrice,
         targetPrice: forecastPrice,
         percentChange: pctChange,
