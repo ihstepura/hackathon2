@@ -104,7 +104,7 @@ export function PriceChart() {
 
         // 2b. Fetch Divergence Status
         setDivergence(null);
-        apiGet<any>(`/api/analysis/divergence/${activeTicker}`)
+        apiGet<any>(`/api/divergence/${activeTicker}`)
             .then(res => {
                 if (isMounted && res && res.status) {
                     setDivergence(res);

@@ -232,23 +232,51 @@ def _compute_technicals(closes, highs, lows, volumes):
 
 @router.get("/news/{ticker}")
 async def get_news(ticker: str, limit: int = 10):
-    """Fetch news + social and calculate decayed AI sentiment."""
+    """Fetch news and calculate AI sentiment (skips slow social scraping)."""
     cache_key = f"alpha_news:{ticker}:{limit}"
     cached = await cache_get(cache_key)
     if cached:
         return cached
 
-    # 1. Fetch News
-    news = fetch_news(ticker.upper(), limit)
-    # 2. Fetch Social
-    social = aggregate_social_data(ticker.upper(), limit)
+    import asyncio
+    loop = asyncio.get_event_loop()
+
+    # 1. Fetch News (fast — Google News RSS)
+    try:
+        news = await asyncio.wait_for(
+            loop.run_in_executor(None, lambda: fetch_news(ticker.upper(), limit)),
+            timeout=10.0
+        )
+    except Exception:
+        news = []
+
+    if not news:
+        return {
+            "ticker": ticker.upper(),
+            "average_score": 0.0,
+            "sentiment_label": "Neutral",
+            "scored_news": []
+        }
+
+    # 2. Analyze with FinBERT (may be slow on first load)
+    try:
+        sentiment = await asyncio.wait_for(
+            loop.run_in_executor(None, lambda: analyze_sentiment(news)),
+            timeout=30.0
+        )
+    except Exception:
+        # Fallback: return news without sentiment scoring
+        scored_items = [{**item, "sentiment_score": 0.0, "decayed_score": 0.0} for item in news]
+        result = {
+            "ticker": ticker.upper(),
+            "average_score": 0.0,
+            "sentiment_label": "Neutral",
+            "scored_news": scored_items
+        }
+        await cache_set(cache_key, result, ttl=600)
+        return result
     
-    combined_data = news + social
-    
-    # 3. Analyze with FinBERT
-    sentiment = analyze_sentiment(combined_data)
-    
-    # 4. Apply temporal exponential decay
+    # 3. Apply temporal exponential decay
     scored_items = sentiment.get("scored_news", [])
     decayed_items = apply_signal_decay(scored_items, half_life_hours=24.0)
     

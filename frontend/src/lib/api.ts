@@ -16,15 +16,23 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-export async function apiGet<T = any>(path: string): Promise<T> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+export async function apiGet<T = any>(path: string, timeoutMs = 60000): Promise<T> {
+    const attempt = async (): Promise<T> => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(`${API_BASE}${path}`, { signal: controller.signal });
+            if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
+            return res.json();
+        } finally {
+            clearTimeout(timeout);
+        }
+    };
     try {
-        const res = await fetch(`${API_BASE}${path}`, { signal: controller.signal });
-        if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
-        return res.json();
-    } finally {
-        clearTimeout(timeout);
+        return await attempt();
+    } catch (err) {
+        // One automatic retry on failure (handles slow cold-start)
+        return await attempt();
     }
 }
 
