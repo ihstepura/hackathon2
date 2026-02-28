@@ -55,32 +55,41 @@ export function FinBERTPanel() {
     if (!data) return null;
 
     const labelColor = (l: string) =>
-        l === 'Positive' ? 'var(--color-positive)' :
-            l === 'Negative' ? 'var(--color-negative)' : 'var(--color-warning)';
+        l === 'Positive' || l === 'Bullish' || l === 'Moderately Bullish' ? 'var(--color-positive)' :
+            l === 'Negative' || l === 'Bearish' || l === 'Moderately Bearish' ? 'var(--color-negative)' : 'var(--color-warning)';
+
+    let aggPos = 0, aggNeu = 0, aggNeg = 0;
+    if (data.articles.length > 0) {
+        aggPos = data.articles.reduce((acc, a) => acc + a.finbert.positive, 0) / data.articles.length;
+        aggNeu = data.articles.reduce((acc, a) => acc + a.finbert.neutral, 0) / data.articles.length;
+        aggNeg = data.articles.reduce((acc, a) => acc + a.finbert.negative, 0) / data.articles.length;
+    }
 
     return (
         <div className="finbert-panel">
             <div className="card-header">
                 <span className="card-title">FINBERT SENTIMENT ANALYSIS — {ticker}</span>
                 <div className="finbert-aggregate">
-                    <span className="finbert-agg-label" style={{ color: labelColor(data.aggregate.label === 'Moderately Bullish' ? 'Positive' : data.aggregate.label) }}>
-                        {data.aggregate.label}
+                    <span className="finbert-agg-label" style={{ color: labelColor(data.overallSentiment) }}>
+                        {data.overallSentiment}
                     </span>
                 </div>
             </div>
 
             {/* Aggregate bar */}
-            <div className="finbert-agg-bar">
-                <div className="finbert-bar-segment positive" style={{ width: `${data.aggregate.positive * 100}%` }}>
-                    {(data.aggregate.positive * 100).toFixed(0)}%
+            {data.articles.length > 0 && (
+                <div className="finbert-agg-bar">
+                    <div className="finbert-bar-segment positive" style={{ width: `${aggPos * 100}%` }}>
+                        {(aggPos * 100).toFixed(0)}%
+                    </div>
+                    <div className="finbert-bar-segment neutral" style={{ width: `${aggNeu * 100}%` }}>
+                        {(aggNeu * 100).toFixed(0)}%
+                    </div>
+                    <div className="finbert-bar-segment negative" style={{ width: `${aggNeg * 100}%` }}>
+                        {(aggNeg * 100).toFixed(0)}%
+                    </div>
                 </div>
-                <div className="finbert-bar-segment neutral" style={{ width: `${data.aggregate.neutral * 100}%` }}>
-                    {(data.aggregate.neutral * 100).toFixed(0)}%
-                </div>
-                <div className="finbert-bar-segment negative" style={{ width: `${data.aggregate.negative * 100}%` }}>
-                    {(data.aggregate.negative * 100).toFixed(0)}%
-                </div>
-            </div>
+            )}
             <div className="finbert-legend">
                 <span className="finbert-legend-item"><span className="finbert-dot positive" /> Positive</span>
                 <span className="finbert-legend-item"><span className="finbert-dot neutral" /> Neutral</span>
@@ -89,22 +98,26 @@ export function FinBERTPanel() {
 
             {/* Per-article bars */}
             <div className="finbert-strip">
-                {data.per_article.map((art) => (
-                    <div key={art.article_id} className="finbert-article">
-                        <div className="finbert-article-title">{art.title}</div>
-                        <div className="finbert-article-bar">
-                            <div className="finbert-bar-segment positive" style={{ width: `${art.positive * 100}%` }} />
-                            <div className="finbert-bar-segment neutral" style={{ width: `${art.neutral * 100}%` }} />
-                            <div className="finbert-bar-segment negative" style={{ width: `${art.negative * 100}%` }} />
+                {data.articles.map((art, i) => {
+                    const maxScore = Math.max(art.finbert.positive, art.finbert.neutral, art.finbert.negative);
+                    const artLabel = maxScore === art.finbert.positive ? 'Positive' : maxScore === art.finbert.negative ? 'Negative' : 'Neutral';
+                    return (
+                        <div key={art.title + i} className="finbert-article">
+                            <div className="finbert-article-title">{art.title}</div>
+                            <div className="finbert-article-bar">
+                                <div className="finbert-bar-segment positive" style={{ width: `${art.finbert.positive * 100}%` }} />
+                                <div className="finbert-bar-segment neutral" style={{ width: `${art.finbert.neutral * 100}%` }} />
+                                <div className="finbert-bar-segment negative" style={{ width: `${art.finbert.negative * 100}%` }} />
+                            </div>
+                            <div className="finbert-article-scores">
+                                <span style={{ color: 'var(--color-positive)' }}>+{(art.finbert.positive * 100).toFixed(0)}%</span>
+                                <span style={{ color: 'var(--color-warning)' }}>~{(art.finbert.neutral * 100).toFixed(0)}%</span>
+                                <span style={{ color: 'var(--color-negative)' }}>-{(art.finbert.negative * 100).toFixed(0)}%</span>
+                                <span className="finbert-article-label" style={{ color: labelColor(artLabel) }}>{artLabel}</span>
+                            </div>
                         </div>
-                        <div className="finbert-article-scores">
-                            <span style={{ color: 'var(--color-positive)' }}>+{(art.positive * 100).toFixed(0)}%</span>
-                            <span style={{ color: 'var(--color-warning)' }}>~{(art.neutral * 100).toFixed(0)}%</span>
-                            <span style={{ color: 'var(--color-negative)' }}>-{(art.negative * 100).toFixed(0)}%</span>
-                            <span className="finbert-article-label" style={{ color: labelColor(art.label) }}>{art.label}</span>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

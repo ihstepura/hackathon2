@@ -33,7 +33,7 @@ const METRICS: { label: string; key: keyof Fundamentals; format: 'currency' | 'p
     { label: 'Free Cash Flow', key: 'free_cash_flow', format: 'bigcur' },
     { label: 'Operating Margin', key: 'operating_margin', format: 'pct' },
     { label: 'Net Margin', key: 'net_margin', format: 'pct' },
-    { label: 'Div Yield', key: 'dividend_yield', format: 'pct' },
+    { label: 'Div Yield', key: 'div_yield', format: 'pct' },
     { label: 'Beta', key: 'beta', format: 'num' },
     { label: '52W High', key: 'high_52w', format: 'currency' },
     { label: '52W Low', key: 'low_52w', format: 'currency' },

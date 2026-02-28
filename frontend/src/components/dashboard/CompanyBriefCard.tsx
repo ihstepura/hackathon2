@@ -70,7 +70,7 @@ export function CompanyBriefCard() {
                     </div>
                     <div className="company-fact">
                         <span className="company-fact-label">Headquarters</span>
-                        <span className="company-fact-value">{data.headquarters}</span>
+                        <span className="company-fact-value">{data.hq}</span>
                     </div>
                     <div className="company-fact">
                         <span className="company-fact-label">Founded</span>
@@ -78,7 +78,7 @@ export function CompanyBriefCard() {
                     </div>
                     <div className="company-fact">
                         <span className="company-fact-label">Employees</span>
-                        <span className="company-fact-value">{(data.employees / 1000).toFixed(0)}K</span>
+                        <span className="company-fact-value">{data.employees ? (data.employees / 1000).toFixed(0) + 'K' : 'N/A'}</span>
                     </div>
                 </div>
             </div>

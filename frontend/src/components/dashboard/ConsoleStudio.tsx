@@ -41,7 +41,7 @@ export function ConsoleStudio() {
 
         try {
             const result = await fetchExplain(ticker, horizon, constraints || prompt);
-            entry.resultSummary = `Model: ${result.model_name} | Accuracy: ${(result.accuracy * 100).toFixed(1)}% | Top feature: ${result.features[0]?.name || 'N/A'}`;
+            entry.resultSummary = `Model: ${result.model} | Accuracy: ${result.accuracy.toFixed(1)}% | Top feature: ${result.features[0]?.name || 'N/A'}`;
             entry.status = 'success';
         } catch {
             entry.resultSummary = 'Execution failed — check connection';

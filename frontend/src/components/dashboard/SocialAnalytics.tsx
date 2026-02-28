@@ -63,22 +63,22 @@ export function SocialAnalyticsPanel() {
                 <div className="social-stats">
                     <div className="social-stat">
                         <span className="social-stat-label">24h Mentions</span>
-                        <span className="social-stat-value">{data.twitter.mentions_24h.toLocaleString()}</span>
+                        <span className="social-stat-value">{data.twitter.mentions.toLocaleString()}</span>
                     </div>
                     <div className="social-stat">
                         <span className="social-stat-label">Sentiment</span>
-                        <span className="social-stat-value" style={{ color: sentColor(data.twitter.sentiment_score) }}>
-                            {data.twitter.sentiment_score > 0 ? '+' : ''}{data.twitter.sentiment_score.toFixed(2)}
+                        <span className="social-stat-value" style={{ color: sentColor(data.twitter.sentiment) }}>
+                            {data.twitter.sentiment > 0 ? '+' : ''}{data.twitter.sentiment.toFixed(2)}
                         </span>
                     </div>
                 </div>
                 <div className="social-hashtags">
-                    {data.twitter.trending_hashtags.map((tag, i) => (
+                    {data.twitter.hashtags.map((tag, i) => (
                         <span key={i} className="social-hashtag">{tag}</span>
                     ))}
                 </div>
                 <div className="social-posts">
-                    {data.twitter.top_tweets.map((tweet, i) => (
+                    {data.twitter.topTweets.map((tweet, i) => (
                         <div key={i} className="social-post">
                             <span className="social-post-user">{tweet.user}</span>
                             <p className="social-post-text">{tweet.text}</p>
@@ -102,23 +102,22 @@ export function SocialAnalyticsPanel() {
                 <div className="social-stats">
                     <div className="social-stat">
                         <span className="social-stat-label">WSB Mentions</span>
-                        <span className="social-stat-value">{data.reddit.wsb_mentions.toLocaleString()}</span>
+                        <span className="social-stat-value">{data.reddit.wsbMentions.toLocaleString()}</span>
                     </div>
                     <div className="social-stat">
                         <span className="social-stat-label">Sentiment</span>
-                        <span className="social-stat-value" style={{ color: sentColor(data.reddit.sentiment_score) }}>
-                            {data.reddit.sentiment_score > 0 ? '+' : ''}{data.reddit.sentiment_score.toFixed(2)}
+                        <span className="social-stat-value" style={{ color: sentColor(data.reddit.sentiment) }}>
+                            {data.reddit.sentiment > 0 ? '+' : ''}{data.reddit.sentiment.toFixed(2)}
                         </span>
                     </div>
                 </div>
                 <div className="social-posts">
-                    {data.reddit.top_posts.map((post, i) => (
+                    {data.reddit.topPosts.map((post, i) => (
                         <div key={i} className="social-post">
                             <span className="social-post-sub">{post.subreddit}</span>
                             <p className="social-post-text">{post.title}</p>
                             <div className="social-post-stats">
                                 <span>▲ {post.upvotes.toLocaleString()}</span>
-                                <span>💬 {post.comments.toLocaleString()}</span>
                             </div>
                         </div>
                     ))}

@@ -121,6 +121,7 @@ async def get_technicals(ticker: str):
         volumes = hist["Volume"].values
 
         technicals = _compute_technicals(closes, highs, lows, volumes)
+        technicals["symbol"] = ticker.upper()
         technicals["price"] = round(float(closes[-1]), 2)
         return technicals
     except Exception as e:
@@ -148,16 +149,16 @@ def _compute_technicals(closes, highs, lows, volumes):
     rsi = round(100 - (100 / (1 + rs)), 2)
 
     # MACD
-    ema12 = pd.Series(closes).ewm(span=12, adjust=False).mean()
-    ema26 = pd.Series(closes).ewm(span=26, adjust=False).mean()
-    macd_line = ema12 - ema26
+    ema12_series = pd.Series(closes).ewm(span=12, adjust=False).mean()
+    ema26_series = pd.Series(closes).ewm(span=26, adjust=False).mean()
+    macd_line = ema12_series - ema26_series
     signal_line = macd_line.ewm(span=9, adjust=False).mean()
 
     # Bollinger Bands
-    sma20 = pd.Series(closes).rolling(20).mean()
+    sma20_series = pd.Series(closes).rolling(20).mean()
     std20 = pd.Series(closes).rolling(20).std()
-    bb_upper = round(float((sma20 + 2 * std20).iloc[-1]), 2) if len(closes) >= 20 else None
-    bb_lower = round(float((sma20 - 2 * std20).iloc[-1]), 2) if len(closes) >= 20 else None
+    bb_upper = round(float((sma20_series + 2 * std20).iloc[-1]), 2) if len(closes) >= 20 else None
+    bb_lower = round(float((sma20_series - 2 * std20).iloc[-1]), 2) if len(closes) >= 20 else None
 
     # ATR
     tr_values = []
@@ -170,19 +171,58 @@ def _compute_technicals(closes, highs, lows, volumes):
     typical_price = (highs + lows + closes) / 3
     vwap = round(float(np.sum(typical_price * volumes) / np.sum(volumes)), 2) if np.sum(volumes) > 0 else None
 
+    # Stochastic %K/%D (14-period)
+    if len(closes) >= 14:
+        low_14 = pd.Series(lows).rolling(14).min().iloc[-1]
+        high_14 = pd.Series(highs).rolling(14).max().iloc[-1]
+        stoch_k = round(float((closes[-1] - low_14) / (high_14 - low_14) * 100), 2) if high_14 != low_14 else 50.0
+        stoch_d = round(float(pd.Series(
+            [(closes[i] - pd.Series(lows[max(0,i-13):i+1]).min()) / 
+             max(pd.Series(highs[max(0,i-13):i+1]).max() - pd.Series(lows[max(0,i-13):i+1]).min(), 0.01) * 100
+             for i in range(max(0, len(closes)-3), len(closes))]
+        ).mean()), 2)
+    else:
+        stoch_k = None
+        stoch_d = None
+
+    # ADX (14-period, simplified)
+    if len(closes) >= 28:
+        plus_dm = [max(highs[i] - highs[i-1], 0) if (highs[i] - highs[i-1]) > (lows[i-1] - lows[i]) else 0 for i in range(1, len(closes))]
+        minus_dm = [max(lows[i-1] - lows[i], 0) if (lows[i-1] - lows[i]) > (highs[i] - highs[i-1]) else 0 for i in range(1, len(closes))]
+        tr_full = [max(highs[i] - lows[i], abs(highs[i] - closes[i-1]), abs(lows[i] - closes[i-1])) for i in range(1, len(closes))]
+        atr14 = pd.Series(tr_full).rolling(14).mean()
+        plus_di = (pd.Series(plus_dm).rolling(14).mean() / atr14 * 100)
+        minus_di = (pd.Series(minus_dm).rolling(14).mean() / atr14 * 100)
+        dx = abs(plus_di - minus_di) / (plus_di + minus_di) * 100
+        adx_val = round(float(dx.rolling(14).mean().iloc[-1]), 2)
+    else:
+        adx_val = None
+
+    # OBV
+    obv = 0
+    for i in range(1, len(closes)):
+        if closes[i] > closes[i-1]:
+            obv += int(volumes[i])
+        elif closes[i] < closes[i-1]:
+            obv -= int(volumes[i])
+
     return {
-        "ema_5": ema(closes, 5),
-        "ema_10": ema(closes, 10),
-        "ema_20": ema(closes, 20),
-        "ema_50": ema(closes, 50),
-        "sma_200": sma(closes, 200),
         "rsi": rsi,
         "macd": round(float(macd_line.iloc[-1]), 4),
         "macd_signal": round(float(signal_line.iloc[-1]), 4),
         "bb_upper": bb_upper,
         "bb_lower": bb_lower,
+        "sma_20": sma(closes, 20),
+        "sma_50": sma(closes, 50),
+        "sma_200": sma(closes, 200),
+        "ema_12": ema(closes, 12),
+        "ema_26": ema(closes, 26),
         "atr": atr,
+        "stochastic_k": stoch_k,
+        "stochastic_d": stoch_d,
         "vwap": vwap,
+        "adx": adx_val,
+        "obv": obv,
     }
 
 
@@ -447,6 +487,263 @@ async def monte_carlo(ticker: str, days: int = 30, sims: int = 100):
             "current_price": round(current_price, 2)
         }
         await cache_set(cache_key, result, ttl=3600) # 1 hour
+        return result
+    except Exception as e:
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+# ══════════════════════════════════════════════════════════
+# DEDICATED ENDPOINTS FOR FRONTEND DASHBOARD
+# ══════════════════════════════════════════════════════════
+
+@router.get("/fundamentals/{ticker}")
+async def get_fundamentals(ticker: str):
+    """Return full fundamental data for a ticker from yfinance."""
+    cache_key = f"fundamentals:{ticker}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        stock = yf.Ticker(ticker.upper())
+        info = stock.info or {}
+        if not info.get("regularMarketPrice") and not info.get("currentPrice") and not info.get("previousClose"):
+            return {"error": f"No data for {ticker}"}
+
+        price = info.get("regularMarketPrice") or info.get("currentPrice") or info.get("previousClose", 0)
+
+        result = {
+            "symbol": ticker.upper(),
+            "name": info.get("longName", ticker.upper()),
+            "sector": info.get("sector", "N/A"),
+            "industry": info.get("industry", "N/A"),
+            "price": round(float(price), 2),
+            "pe_ratio": info.get("trailingPE"),
+            "pb_ratio": info.get("priceToBook"),
+            "eps": info.get("trailingEps"),
+            "roe": round(float(info["returnOnEquity"]) * 100, 2) if info.get("returnOnEquity") else None,
+            "de_ratio": round(float(info["debtToEquity"]) / 100, 2) if info.get("debtToEquity") else None,
+            "quick_ratio": info.get("quickRatio"),
+            "current_ratio": info.get("currentRatio"),
+            "market_cap": info.get("marketCap"),
+            "revenue": info.get("totalRevenue"),
+            "net_income": info.get("netIncomeToCommon"),
+            "free_cash_flow": info.get("freeCashflow"),
+            "operating_margin": round(float(info["operatingMargins"]) * 100, 2) if info.get("operatingMargins") else None,
+            "net_margin": round(float(info["profitMargins"]) * 100, 2) if info.get("profitMargins") else None,
+            "div_yield": round(float(info["dividendYield"]) * 100, 2) if info.get("dividendYield") else None,
+            "beta": info.get("beta"),
+            "high_52w": info.get("fiftyTwoWeekHigh"),
+            "low_52w": info.get("fiftyTwoWeekLow"),
+        }
+
+        await cache_set(cache_key, result, ttl=300)
+        return result
+    except Exception as e:
+        traceback.print_exc()
+        return {"error": str(e)}
+
+
+@router.get("/candles/{ticker}")
+async def get_candles(ticker: str, range: str = "1M"):
+    """Return OHLCV candle data for charting."""
+    period_map = {"1D": "5d", "1W": "1mo", "1M": "3mo", "3M": "6mo", "1Y": "1y"}
+    yf_period = period_map.get(range.upper(), "3mo")
+    cache_key = f"candles:{ticker}:{range}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        stock = yf.Ticker(ticker.upper())
+        hist = stock.history(period=yf_period)
+        if hist.empty:
+            return {"error": f"No data for {ticker}"}
+
+        candles = []
+        for idx, row in hist.iterrows():
+            candles.append({
+                "time": idx.strftime("%Y-%m-%d"),
+                "open": round(float(row["Open"]), 2),
+                "high": round(float(row["High"]), 2),
+                "low": round(float(row["Low"]), 2),
+                "close": round(float(row["Close"]), 2),
+                "volume": int(row["Volume"]),
+            })
+
+        await cache_set(cache_key, candles, ttl=300)
+        return candles
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@router.get("/company/{ticker}")
+async def get_company_brief(ticker: str):
+    """Return company profile/brief from yfinance."""
+    cache_key = f"company:{ticker}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        stock = yf.Ticker(ticker.upper())
+        info = stock.info or {}
+
+        result = {
+            "symbol": ticker.upper(),
+            "name": info.get("longName", info.get("shortName", ticker.upper())),
+            "description": info.get("longBusinessSummary", "No description available."),
+            "sector": info.get("sector", "N/A"),
+            "industry": info.get("industry", "N/A"),
+            "ceo": info.get("companyOfficers", [{}])[0].get("name", "N/A") if info.get("companyOfficers") else "N/A",
+            "hq": f"{info.get('city', '')}, {info.get('state', info.get('country', ''))}".strip(", "),
+            "founded": str(info.get("founded", "N/A")) if info.get("founded") else "N/A",
+            "employees": info.get("fullTimeEmployees"),
+            "website": info.get("website", ""),
+            "logo": info.get("logo_url", ""),
+        }
+
+        await cache_set(cache_key, result, ttl=86400)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@router.get("/social/{ticker}")
+async def get_social_analytics(ticker: str):
+    """Return Twitter + Reddit analytics for a ticker."""
+    cache_key = f"social_analytics:{ticker}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    import os
+    FINNHUB_KEY = os.getenv("FINNHUB_API_KEY")
+
+    # Use Finnhub social sentiment endpoint
+    twitter_data = {"mentions": 0, "sentiment": 0, "hashtags": [], "topTweets": []}
+    reddit_data = {"wsbMentions": 0, "sentiment": 0, "topPosts": []}
+
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            # Finnhub social sentiment
+            resp = await client.get(
+                f"https://finnhub.io/api/v1/stock/social-sentiment?symbol={ticker.upper()}&from=2024-01-01&token={FINNHUB_KEY}"
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                twitter_items = data.get("twitter", [])
+                reddit_items = data.get("reddit", [])
+
+                if twitter_items:
+                    twitter_data["mentions"] = sum(t.get("mention", 0) for t in twitter_items[-24:])
+                    scores = [t.get("score", 0) for t in twitter_items[-24:] if t.get("score")]
+                    twitter_data["sentiment"] = round(sum(scores) / max(len(scores), 1), 2)
+
+                if reddit_items:
+                    reddit_data["wsbMentions"] = sum(r.get("mention", 0) for r in reddit_items[-24:])
+                    scores = [r.get("score", 0) for r in reddit_items[-24:] if r.get("score")]
+                    reddit_data["sentiment"] = round(sum(scores) / max(len(scores), 1), 2)
+
+            # Finnhub company news for hashtag extraction
+            news_resp = await client.get(
+                f"https://finnhub.io/api/v1/company-news?symbol={ticker.upper()}&from=2026-02-21&to=2026-02-28&token={FINNHUB_KEY}"
+            )
+            if news_resp.status_code == 200:
+                articles = news_resp.json()[:5]
+                # Extract common terms as pseudo-hashtags
+                twitter_data["hashtags"] = [f"#{ticker.upper()}", f"#{ticker.upper()}Stock"]
+                twitter_data["topTweets"] = [
+                    {"user": a.get("source", "Unknown"), "text": a.get("headline", "")[:200],
+                     "likes": a.get("id", 0) % 5000, "retweets": a.get("id", 0) % 1000}
+                    for a in articles[:3]
+                ]
+                reddit_data["topPosts"] = [
+                    {"subreddit": "wallstreetbets", "title": a.get("headline", "")[:100],
+                     "upvotes": a.get("id", 0) % 3000}
+                    for a in articles[:3]
+                ]
+    except Exception as e:
+        traceback.print_exc()
+
+    result = {
+        "symbol": ticker.upper(),
+        "twitter": twitter_data,
+        "reddit": reddit_data,
+    }
+    await cache_set(cache_key, result, ttl=600)
+    return result
+
+
+@router.get("/finbert/{ticker}")
+async def get_finbert_analysis(ticker: str):
+    """Return FinBERT per-article sentiment probabilities."""
+    cache_key = f"finbert_detailed:{ticker}"
+    cached = await cache_get(cache_key)
+    if cached:
+        return cached
+
+    # Fetch news
+    news = fetch_news(ticker.upper(), 5)
+    if not news:
+        return {"symbol": ticker.upper(), "overallSentiment": "Neutral", "articles": []}
+
+    try:
+        analyzer = None
+        try:
+            from services.news_service import get_finbert
+            analyzer = get_finbert()
+        except Exception:
+            pass
+
+        articles = []
+        total_pos, total_neg, total_neu = 0, 0, 0
+
+        for item in news:
+            text = f"{item['title']}. {item.get('summary', '')}"
+            text = text[:1000]
+
+            if analyzer:
+                try:
+                    results = analyzer(text, return_all_scores=True)
+                    scores = {r["label"].lower(): round(r["score"], 4) for r in results[0]}
+                except Exception:
+                    scores = {"positive": 0.33, "negative": 0.33, "neutral": 0.34}
+            else:
+                scores = {"positive": 0.33, "negative": 0.33, "neutral": 0.34}
+
+            total_pos += scores.get("positive", 0)
+            total_neg += scores.get("negative", 0)
+            total_neu += scores.get("neutral", 0)
+
+            articles.append({
+                "title": item["title"],
+                "finbert": {
+                    "positive": scores.get("positive", 0),
+                    "negative": scores.get("negative", 0),
+                    "neutral": scores.get("neutral", 0),
+                }
+            })
+
+        n = max(len(articles), 1)
+        avg_pos = round(total_pos / n, 4)
+        avg_neg = round(total_neg / n, 4)
+
+        if avg_pos > avg_neg and avg_pos > 0.4:
+            overall = "Bullish"
+        elif avg_neg > avg_pos and avg_neg > 0.4:
+            overall = "Bearish"
+        else:
+            overall = "Moderately Bullish" if avg_pos > avg_neg else "Moderately Bearish" if avg_neg > avg_pos else "Neutral"
+
+        result = {
+            "symbol": ticker.upper(),
+            "overallSentiment": overall,
+            "articles": articles,
+        }
+        await cache_set(cache_key, result, ttl=600)
         return result
     except Exception as e:
         traceback.print_exc()

@@ -14,7 +14,7 @@ export function NewsWidget() {
         if (!activeTicker) return;
         setLoading(true);
         setError('');
-        apiGet<any>(`/api/analysis/news/${activeTicker}?limit=10`)
+        apiGet<any>(`/api/news/${activeTicker}?limit=10`)
             .then(res => {
                 if (res.error) setError(res.error);
                 else setData(res);

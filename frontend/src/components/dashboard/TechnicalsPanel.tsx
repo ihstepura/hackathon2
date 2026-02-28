@@ -27,13 +27,13 @@ const INDICATORS: IndicatorMeta[] = [
         key: 'macd', label: 'MACD',
         tooltip: 'Moving Average Convergence Divergence shows the relationship between two moving averages. When MACD crosses above the signal line, it\'s bullish; below is bearish. Calculated as EMA(12) - EMA(26).',
         format: v => v.toFixed(2),
-        signal: (v, d) => v > d.macd_signal ? 'bullish' : 'bearish',
+        signal: (v, d) => (d.macd_signal != null && v > d.macd_signal) ? 'bullish' : 'bearish',
     },
     {
         key: 'macd_signal', label: 'MACD Signal',
         tooltip: 'The signal line is a 9-period EMA of the MACD line. Crossovers between MACD and signal generate trade signals. A bullish crossover occurs when MACD rises above the signal.',
         format: v => v.toFixed(2),
-        signal: (v, d) => d.macd > v ? 'bullish' : 'bearish',
+        signal: (v, d) => (d.macd != null && d.macd > v) ? 'bullish' : 'bearish',
     },
     {
         key: 'bb_upper', label: 'BB Upper',

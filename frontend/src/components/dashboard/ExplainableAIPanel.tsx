@@ -44,7 +44,7 @@ export function ExplainableAIPanel() {
                             padding: '2px 6px',
                             borderRadius: 4,
                         }}>
-                            {(data.accuracy * 100).toFixed(1)}% Accuracy
+                            {data.accuracy.toFixed(1)}% Accuracy
                         </span>
                     )}
                 </div>
@@ -70,17 +70,17 @@ export function ExplainableAIPanel() {
                         <div className="model-summary-grid">
                             <div className="model-summary-item">
                                 <span className="label">Model</span>
-                                <span className="value" style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{data.model_name}</span>
+                                <span className="value" style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>{data.model}</span>
                             </div>
                             <div className="model-summary-item">
                                 <span className="label">Accuracy</span>
                                 <span className="value" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-positive)' }}>
-                                    {(data.accuracy * 100).toFixed(1)}%
+                                    {data.accuracy.toFixed(1)}%
                                 </span>
                             </div>
                             <div className="model-summary-item">
                                 <span className="label">Training Date</span>
-                                <span className="value" style={{ fontFamily: 'var(--font-mono)' }}>{data.training_date}</span>
+                                <span className="value" style={{ fontFamily: 'var(--font-mono)' }}>{data.trainingDate}</span>
                             </div>
                         </div>
                     )}
@@ -97,12 +97,12 @@ export function ExplainableAIPanel() {
                                 <div className="feature-info">
                                     <span className="feature-rank">#{i + 1}</span>
                                     <span className="feature-name">{feat.name}</span>
-                                    <span className="feature-pct">{(feat.importance * 100).toFixed(0)}%</span>
+                                    <span className="feature-pct">{feat.importance.toFixed(0)}%</span>
                                 </div>
                                 <div className="feature-bar-bg">
                                     <div
                                         className="feature-bar-fill"
-                                        style={{ width: `${feat.importance * 100 / 0.25}%` }}
+                                        style={{ width: `${feat.importance}%` }}
                                     />
                                 </div>
                             </div>

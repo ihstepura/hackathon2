@@ -18,7 +18,7 @@ export function TickerBar() {
     const [activeIndex, setActiveIndex] = useState(-1);
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
-    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -142,7 +142,6 @@ export function TickerBar() {
                         >
                             <span className="tickerbar-option-symbol">{item.symbol}</span>
                             <span className="tickerbar-option-name">{item.name}</span>
-                            <span className="tickerbar-option-exchange">{item.exchange}</span>
                         </li>
                     ))}
                 </ul>

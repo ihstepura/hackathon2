@@ -70,14 +70,14 @@ export function ExplainabilityResults() {
                                         <div className="attribution-label">
                                             <span>{feat.name}</span>
                                             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-                                                {(feat.importance * 100).toFixed(0)}%
+                                                {feat.importance.toFixed(0)}%
                                             </span>
                                         </div>
                                         <div className="attribution-bar">
                                             <div
                                                 className="attribution-bar-fill"
                                                 style={{
-                                                    width: `${feat.importance * 100 / 0.25}%`,
+                                                    width: `${feat.importance}%`,
                                                     background: barColor,
                                                 }}
                                             />
@@ -103,15 +103,7 @@ export function ExplainabilityResults() {
                         {data.evidence.map((ev, i) => (
                             <div key={i} className="evidence-item">
                                 <div className="evidence-header">
-                                    <span className="evidence-source">{ev.source}</span>
-                                    <span
-                                        className="evidence-confidence"
-                                        style={{
-                                            color: ev.confidence > 0.8 ? 'var(--color-positive)' : ev.confidence > 0.6 ? 'var(--color-warning)' : 'var(--color-text-muted)',
-                                        }}
-                                    >
-                                        {(ev.confidence * 100).toFixed(0)}% conf.
-                                    </span>
+                                    <span className="evidence-source">{ev.type.toUpperCase()} SIGNAL</span>
                                 </div>
                                 <p className="evidence-text">{ev.text}</p>
                             </div>

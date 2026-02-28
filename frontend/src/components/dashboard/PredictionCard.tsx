@@ -72,7 +72,7 @@ export function PredictionCard() {
         <div className="card prediction-card">
             <div className="card-header">
                 <span className="card-title">AI PREDICTION — {ticker}</span>
-                <span className="prediction-horizon">{data.horizon_days}-DAY FORECAST</span>
+                <span className="prediction-horizon">{data.horizon}</span>
             </div>
             <div className="card-body prediction-body">
                 {/* Direction + confidence */}
@@ -101,15 +101,15 @@ export function PredictionCard() {
                 <div className="prediction-prices">
                     <div className="prediction-price-item">
                         <span className="prediction-price-label">Current</span>
-                        <span className="prediction-price-value">${data.current_price.toFixed(2)}</span>
+                        <span className="prediction-price-value">${data.currentPrice.toFixed(2)}</span>
                     </div>
                     <div className="prediction-arrow" style={{ color: dirColor }}>{dirIcon}</div>
                     <div className="prediction-price-item">
                         <span className="prediction-price-label">Target</span>
-                        <span className="prediction-price-value" style={{ color: dirColor }}>${data.target_price.toFixed(2)}</span>
+                        <span className="prediction-price-value" style={{ color: dirColor }}>${data.targetPrice.toFixed(2)}</span>
                     </div>
                     <div className="prediction-change" style={{ background: dirColor + '18', color: dirColor }}>
-                        {data.predicted_change_pct > 0 ? '+' : ''}{data.predicted_change_pct}%
+                        {data.percentChange > 0 ? '+' : ''}{data.percentChange}%
                     </div>
                 </div>
 
