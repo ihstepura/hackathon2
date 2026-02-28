@@ -3,9 +3,17 @@ FinanceIQ v6 — News & Sentiment Service
 Uses Google News RSS + FinBERT for financial sentiment analysis.
 """
 import feedparser
+import re
 from datetime import datetime
 from core.logging import logger
 
+def _strip_html(text: str) -> str:
+    """Remove HTML tags and decode entities from a string."""
+    import html
+    clean = re.sub(r'<[^>]+>', ' ', text)  # Replace tags with space
+    clean = html.unescape(clean)  # Decode &nbsp; etc.
+    clean = re.sub(r'\s+', ' ', clean).strip()  # Collapse whitespace
+    return clean
 
 def fetch_news(ticker: str, limit: int = 10) -> list[dict]:
     """Fetch latest news for a ticker from Google News RSS."""
@@ -16,11 +24,12 @@ def fetch_news(ticker: str, limit: int = 10) -> list[dict]:
         feed = feedparser.parse(rss_url)
         items = []
         for entry in feed.entries[:limit]:
+            raw_summary = entry.get("description", "")
             items.append({
                 "title": entry.title,
                 "link": entry.link,
                 "published": entry.get("published", datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT")),
-                "summary": entry.get("description", ""),
+                "summary": _strip_html(raw_summary),
             })
         return items
     except Exception as e:
