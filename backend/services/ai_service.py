@@ -44,8 +44,12 @@ def prepare_data(df: pd.DataFrame, sequence_length: int = 20):
     return np.array(x), np.array(y), scaler
 
 
-def train_lstm_model(x_train, y_train, epochs=20, lr=0.01):
+def train_lstm_model(x_train, y_train, epochs=50, lr=0.01):
     """Train the PyTorch LSTM model on historical data."""
+    # Fixed seed for reproducible predictions across page loads
+    torch.manual_seed(42)
+    np.random.seed(42)
+
     model = PricePredictorLSTM(input_size=5)
     loss_function = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)

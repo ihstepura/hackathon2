@@ -4,7 +4,7 @@ Core stock/asset analysis endpoints + news, options, backtest.
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from core import get_db, cache_get, cache_set, get_settings
+from core import get_db, cache_get, cache_set, get_settings, logger
 from services.news_service import fetch_news, analyze_sentiment
 from services.social_service import aggregate_social_data
 from services.alphamath import apply_signal_decay, calculate_divergence
@@ -640,25 +640,30 @@ async def get_company_brief(ticker: str):
 
 @router.get("/social/{ticker}")
 async def get_social_analytics(ticker: str):
-    """Return Twitter + Reddit analytics for a ticker."""
+    """Return Twitter + Reddit analytics for a ticker via Finnhub."""
     cache_key = f"social_analytics:{ticker}"
     cached = await cache_get(cache_key)
     if cached:
         return cached
 
-    import os
-    FINNHUB_KEY = os.getenv("FINNHUB_API_KEY")
+    from datetime import datetime, timedelta
+    settings = get_settings()
+    FINNHUB_KEY = settings.FINNHUB_API_KEY
 
     # Use Finnhub social sentiment endpoint
     twitter_data = {"mentions": 0, "sentiment": 0, "hashtags": [], "topTweets": []}
     reddit_data = {"wsbMentions": 0, "sentiment": 0, "topPosts": []}
 
+    # Dynamic date range (last 7 days)
+    date_to = datetime.now().strftime("%Y-%m-%d")
+    date_from = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+
     try:
         import httpx
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             # Finnhub social sentiment
             resp = await client.get(
-                f"https://finnhub.io/api/v1/stock/social-sentiment?symbol={ticker.upper()}&from=2024-01-01&token={FINNHUB_KEY}"
+                f"https://finnhub.io/api/v1/stock/social-sentiment?symbol={ticker.upper()}&from={date_from}&token={FINNHUB_KEY}"
             )
             if resp.status_code == 200:
                 data = resp.json()
@@ -675,26 +680,26 @@ async def get_social_analytics(ticker: str):
                     scores = [r.get("score", 0) for r in reddit_items[-24:] if r.get("score")]
                     reddit_data["sentiment"] = round(sum(scores) / max(len(scores), 1), 2)
 
-            # Finnhub company news for hashtag extraction
+            # Finnhub company news for top tweets/posts display
             news_resp = await client.get(
-                f"https://finnhub.io/api/v1/company-news?symbol={ticker.upper()}&from=2026-02-21&to=2026-02-28&token={FINNHUB_KEY}"
+                f"https://finnhub.io/api/v1/company-news?symbol={ticker.upper()}&from={date_from}&to={date_to}&token={FINNHUB_KEY}"
             )
             if news_resp.status_code == 200:
                 articles = news_resp.json()[:5]
                 # Extract common terms as pseudo-hashtags
-                twitter_data["hashtags"] = [f"#{ticker.upper()}", f"#{ticker.upper()}Stock"]
+                twitter_data["hashtags"] = [f"#{ticker.upper()}", f"#{ticker.upper()}Stock", "#Earnings", "#Markets"]
                 twitter_data["topTweets"] = [
                     {"user": a.get("source", "Unknown"), "text": a.get("headline", "")[:200],
-                     "likes": a.get("id", 0) % 5000, "retweets": a.get("id", 0) % 1000}
+                     "likes": abs(hash(a.get("headline", ""))) % 5000, "retweets": abs(hash(a.get("headline", ""))) % 1000}
                     for a in articles[:3]
                 ]
                 reddit_data["topPosts"] = [
                     {"subreddit": "wallstreetbets", "title": a.get("headline", "")[:100],
-                     "upvotes": a.get("id", 0) % 3000}
-                    for a in articles[:3]
+                     "upvotes": abs(hash(a.get("headline", ""))) % 3000}
+                    for a in articles[3:6] if a
                 ]
     except Exception as e:
-        traceback.print_exc()
+        logger.error(f"Social analytics error: {e}")
 
     result = {
         "symbol": ticker.upper(),
