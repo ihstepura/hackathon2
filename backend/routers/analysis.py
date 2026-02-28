@@ -776,8 +776,8 @@ async def get_finbert_analysis(ticker: str):
 
             if analyzer:
                 try:
-                    results = analyzer(text, return_all_scores=True)
-                    scores = {r["label"].lower(): round(r["score"], 4) for r in results[0]}
+                    results = analyzer(text, top_k=None)
+                    scores = {r["label"].lower(): round(r["score"], 4) for r in results}
                 except Exception:
                     scores = {"positive": 0.33, "negative": 0.33, "neutral": 0.34}
             else:
