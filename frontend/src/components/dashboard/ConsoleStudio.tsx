@@ -1,56 +1,70 @@
 'use client';
 /**
- * ConsoleStudio — Prompt editor with run button and run history.
+ * ConsoleStudio — AI prompt editor with custom analysis responses.
  */
 import { useState, useCallback } from 'react';
 import { useAtomValue } from 'jotai';
 import { activeTickerAtom } from '@/atoms';
-import { fetchExplain } from '@/lib/api';
+import { fetchChat } from '@/lib/api';
 
 interface RunEntry {
     id: string;
     ticker: string;
-    horizon: number;
-    constraints: string;
+    prompt: string;
     timestamp: number;
     status: 'success' | 'error';
-    resultSummary: string;
+    response: string;
+    expanded: boolean;
 }
+
+const EXAMPLE_PROMPTS = [
+    'Predict price movement with confidence intervals. Use all available technical and fundamental signals.',
+    'What are the key support and resistance levels?',
+    'Analyze the risk/reward ratio for a 30-day hold.',
+    'Compare the current valuation to historical averages.',
+];
 
 export function ConsoleStudio() {
     const ticker = useAtomValue(activeTickerAtom);
-    const [prompt, setPrompt] = useState('Predict price movement with confidence intervals. Use all available technical and fundamental signals.');
-    const [horizon, setHorizon] = useState(30);
-    const [constraints, setConstraints] = useState('');
+    const [prompt, setPrompt] = useState(EXAMPLE_PROMPTS[0]);
     const [isRunning, setIsRunning] = useState(false);
     const [history, setHistory] = useState<RunEntry[]>([]);
 
     const handleRun = useCallback(async () => {
-        if (!ticker || isRunning) return;
+        if (!ticker || isRunning || !prompt.trim()) return;
         setIsRunning(true);
 
         const entry: RunEntry = {
             id: `run-${Date.now()}`,
             ticker,
-            horizon,
-            constraints: constraints || prompt,
+            prompt: prompt.trim(),
             timestamp: Date.now(),
             status: 'success',
-            resultSummary: '',
+            response: '',
+            expanded: true,
         };
 
         try {
-            const result = await fetchExplain(ticker, horizon, constraints || prompt);
-            entry.resultSummary = `Model: ${result.model} | Accuracy: ${result.accuracy.toFixed(1)}% | Top feature: ${result.features[0]?.name || 'N/A'}`;
+            const fullPrompt = `[Ticker: ${ticker}] ${prompt.trim()}`;
+            const response = await fetchChat(ticker, [{ role: 'user', content: fullPrompt }]);
+            entry.response = response;
             entry.status = 'success';
         } catch {
-            entry.resultSummary = 'Execution failed — check connection';
+            entry.response = 'Execution failed — check backend connection.';
             entry.status = 'error';
         }
 
-        setHistory(prev => [entry, ...prev]);
+        setHistory(prev => {
+            // Collapse all previous entries
+            const collapsed = prev.map(e => ({ ...e, expanded: false }));
+            return [entry, ...collapsed];
+        });
         setIsRunning(false);
-    }, [ticker, horizon, constraints, prompt, isRunning]);
+    }, [ticker, prompt, isRunning]);
+
+    const toggleExpand = (id: string) => {
+        setHistory(prev => prev.map(e => e.id === id ? { ...e, expanded: !e.expanded } : e));
+    };
 
     return (
         <div className="console-studio">
@@ -74,38 +88,25 @@ export function ConsoleStudio() {
                         aria-label="Analysis prompt"
                     />
 
-                    {/* Parameters */}
-                    <div className="console-params">
-                        <div className="console-param">
-                            <label className="console-label">Horizon (days)</label>
-                            <input
-                                type="number"
-                                className="console-input"
-                                value={horizon}
-                                onChange={(e) => setHorizon(Number(e.target.value))}
-                                min={1}
-                                max={365}
-                                aria-label="Prediction horizon in days"
-                            />
-                        </div>
-                        <div className="console-param" style={{ flex: 2 }}>
-                            <label className="console-label">Constraints (optional)</label>
-                            <input
-                                type="text"
-                                className="console-input"
-                                value={constraints}
-                                onChange={(e) => setConstraints(e.target.value)}
-                                placeholder="e.g. max_drawdown=10%, exclude=earnings"
-                                aria-label="Analysis constraints"
-                            />
-                        </div>
+                    {/* Quick prompt chips */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                        {EXAMPLE_PROMPTS.map((p, i) => (
+                            <button
+                                key={i}
+                                className="chat-chip"
+                                onClick={() => setPrompt(p)}
+                                style={{ fontSize: 10 }}
+                            >
+                                {p.length > 40 ? p.slice(0, 40) + '…' : p}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Run button */}
                     <button
                         className="btn-primary console-run"
                         onClick={handleRun}
-                        disabled={!ticker || isRunning}
+                        disabled={!ticker || isRunning || !prompt.trim()}
                     >
                         {isRunning ? (
                             <>
@@ -132,25 +133,44 @@ export function ConsoleStudio() {
                         {history.length} run{history.length !== 1 ? 's' : ''}
                     </span>
                 </div>
-                <div className="widget-body" style={{ padding: 0, maxHeight: 300, overflowY: 'auto' }}>
+                <div className="widget-body" style={{ padding: 0, maxHeight: 400, overflowY: 'auto' }}>
                     {history.length === 0 && (
                         <div className="widget-empty" style={{ padding: 20 }}>
-                            No runs yet. Execute an analysis above.
+                            No runs yet. Enter a prompt and click Execute Analysis.
                         </div>
                     )}
                     {history.map((entry) => (
-                        <div key={entry.id} className="run-entry">
+                        <div key={entry.id} className="run-entry" style={{ cursor: 'pointer' }} onClick={() => toggleExpand(entry.id)}>
                             <div className="run-entry-header">
                                 <span className={`run-status ${entry.status}`}>
                                     {entry.status === 'success' ? '✓' : '✗'}
                                 </span>
                                 <span className="run-ticker">{entry.ticker}</span>
-                                <span className="run-horizon">{entry.horizon}d</span>
-                                <span className="run-time">
+                                <span className="run-time" style={{ flex: 1, textAlign: 'right' }}>
                                     {new Date(entry.timestamp).toLocaleTimeString()}
                                 </span>
+                                <span style={{ fontSize: 10, marginLeft: 8, color: 'var(--color-text-muted)' }}>
+                                    {entry.expanded ? '▼' : '▶'}
+                                </span>
                             </div>
-                            <div className="run-summary">{entry.resultSummary}</div>
+                            <div className="run-summary" style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: entry.expanded ? 8 : 0 }}>
+                                {entry.prompt.length > 80 ? entry.prompt.slice(0, 80) + '…' : entry.prompt}
+                            </div>
+                            {entry.expanded && (
+                                <div style={{
+                                    padding: '10px 12px',
+                                    background: 'var(--color-surface)',
+                                    borderRadius: 6,
+                                    fontSize: 12,
+                                    lineHeight: 1.6,
+                                    whiteSpace: 'pre-wrap',
+                                    fontFamily: 'var(--font-mono)',
+                                    color: entry.status === 'error' ? 'var(--color-negative)' : 'var(--color-text)',
+                                    marginBottom: 4,
+                                }}>
+                                    {entry.response}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
