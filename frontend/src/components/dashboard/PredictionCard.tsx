@@ -63,7 +63,8 @@ export function PredictionCard() {
     const sparkH = 60;
     const sparkW = 200;
     const yAxisW = 36; // left margin for y-axis labels
-    const totalW = sparkW + yAxisW;
+    const rAxisW = 36; // right margin for target price label
+    const totalW = sparkW + yAxisW + rAxisW;
     const sparkPoints = data.trajectory.map((v, i) => {
         const x = yAxisW + (i / (data.trajectory.length - 1)) * sparkW;
         const y = sparkH - ((v - min) / range) * sparkH;
@@ -127,7 +128,7 @@ export function PredictionCard() {
                         <text x={yAxisW - 4} y={Math.max(yStart + 3, 10)} fill="var(--color-text-muted)" fontSize="9" fontFamily="var(--font-mono)" textAnchor="end">
                             ${data.trajectory[0]?.toFixed(0)}
                         </text>
-                        <text x={yAxisW - 4} y={Math.max(yEnd + 3, 10)} fill={dirColor} fontSize="9" fontFamily="var(--font-mono)" textAnchor="end">
+                        <text x={yAxisW + sparkW + 4} y={Math.max(yEnd + 3, 10)} fill={dirColor} fontSize="9" fontFamily="var(--font-mono)">
                             ${data.trajectory[data.trajectory.length - 1]?.toFixed(0)}
                         </text>
                         {/* Divider line between historical and forecast */}
