@@ -46,7 +46,9 @@ export function ConsoleStudio() {
 
         try {
             const fullPrompt = `[Ticker: ${ticker}] ${prompt.trim()}`;
-            const response = await fetchChat(ticker, [{ role: 'user', content: fullPrompt }]);
+            let response = await fetchChat(ticker, [{ role: 'user', content: fullPrompt }]);
+            // Strip markdown bold/italic markers
+            response = response.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1').replace(/__(.+?)__/g, '$1');
             entry.response = response;
             entry.status = 'success';
         } catch {
@@ -140,8 +142,8 @@ export function ConsoleStudio() {
                         </div>
                     )}
                     {history.map((entry) => (
-                        <div key={entry.id} className="run-entry" style={{ cursor: 'pointer' }} onClick={() => toggleExpand(entry.id)}>
-                            <div className="run-entry-header">
+                        <div key={entry.id} className="run-entry">
+                            <div className="run-entry-header" style={{ cursor: 'pointer' }} onClick={() => toggleExpand(entry.id)}>
                                 <span className={`run-status ${entry.status}`}>
                                     {entry.status === 'success' ? '✓' : '✗'}
                                 </span>
@@ -153,7 +155,7 @@ export function ConsoleStudio() {
                                     {entry.expanded ? '▼' : '▶'}
                                 </span>
                             </div>
-                            <div className="run-summary" style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: entry.expanded ? 8 : 0 }}>
+                            <div className="run-summary" style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: entry.expanded ? 8 : 0, cursor: 'pointer' }} onClick={() => toggleExpand(entry.id)}>
                                 {entry.prompt.length > 80 ? entry.prompt.slice(0, 80) + '…' : entry.prompt}
                             </div>
                             {entry.expanded && (
