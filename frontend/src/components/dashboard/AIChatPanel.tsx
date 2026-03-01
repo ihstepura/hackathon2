@@ -23,11 +23,15 @@ export function AIChatPanel() {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const prevTickerRef = useRef(ticker);
 
-    // Clear chat when ticker changes
+    // Clear chat only when ticker changes to a different company
     useEffect(() => {
-        setHistory([]);
-        setInput('');
+        if (prevTickerRef.current !== ticker) {
+            setHistory([]);
+            setInput('');
+            prevTickerRef.current = ticker;
+        }
     }, [ticker, setHistory]);
 
     useEffect(() => {
