@@ -116,13 +116,45 @@ export function PredictionCard() {
                 {/* Sparkline */}
                 <div className="prediction-sparkline">
                     <span className="prediction-spark-label">Predicted Trajectory</span>
-                    <svg width={sparkW} height={sparkH} viewBox={`0 0 ${sparkW} ${sparkH}`} className="prediction-svg">
+                    <svg width={sparkW} height={sparkH + 20} viewBox={`0 0 ${sparkW} ${sparkH + 20}`} className="prediction-svg">
+                        {/* Divider line between historical and forecast */}
+                        {data.trajectory.length > 10 && (
+                            <line
+                                x1={(9 / (data.trajectory.length - 1)) * sparkW}
+                                y1={0}
+                                x2={(9 / (data.trajectory.length - 1)) * sparkW}
+                                y2={sparkH}
+                                stroke="var(--color-text-muted)"
+                                strokeWidth="1"
+                                strokeDasharray="3 3"
+                                opacity={0.5}
+                            />
+                        )}
                         <polyline points={sparkPoints} fill="none" stroke={dirColor} strokeWidth="2" strokeLinejoin="round" />
                         {data.trajectory.map((v, i) => {
                             const x = (i / (data.trajectory.length - 1)) * sparkW;
                             const y = sparkH - ((v - min) / range) * sparkH;
                             return <circle key={i} cx={x} cy={y} r="3" fill={dirColor} opacity={i === 0 || i === data.trajectory.length - 1 ? 1 : 0.4} />;
                         })}
+                        {/* Price labels at start and end */}
+                        <text x={2} y={12} fill="var(--color-text-muted)" fontSize="9" fontFamily="var(--font-mono)">
+                            ${data.trajectory[0]?.toFixed(0)}
+                        </text>
+                        <text x={sparkW - 2} y={12} fill={dirColor} fontSize="9" fontFamily="var(--font-mono)" textAnchor="end">
+                            ${data.trajectory[data.trajectory.length - 1]?.toFixed(0)}
+                        </text>
+                        {/* Time axis labels */}
+                        <text x={0} y={sparkH + 14} fill="var(--color-text-muted)" fontSize="9" fontFamily="var(--font-mono)">
+                            −10d
+                        </text>
+                        {data.trajectory.length > 10 && (
+                            <text x={(9 / (data.trajectory.length - 1)) * sparkW} y={sparkH + 14} fill="var(--color-text-muted)" fontSize="9" fontFamily="var(--font-mono)" textAnchor="middle">
+                                Today
+                            </text>
+                        )}
+                        <text x={sparkW} y={sparkH + 14} fill="var(--color-text-muted)" fontSize="9" fontFamily="var(--font-mono)" textAnchor="end">
+                            +10d
+                        </text>
                     </svg>
                 </div>
             </div>
