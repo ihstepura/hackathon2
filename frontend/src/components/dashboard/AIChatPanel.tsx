@@ -50,7 +50,9 @@ export function AIChatPanel() {
 
         try {
             const allMsgs = [...history, userMsg].map(m => ({ role: m.role, content: m.content }));
-            const response = await fetchChat(sym, allMsgs);
+            let response = await fetchChat(sym, allMsgs);
+            // Strip markdown bold/italic markers
+            response = response.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*(.+?)\*/g, '$1').replace(/__(.+?)__/g, '$1');
             const assistantMsg: ChatMessage = {
                 id: `${Date.now()}-assistant`,
                 role: 'assistant',
