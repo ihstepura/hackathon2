@@ -3,7 +3,7 @@
  * PredictionCard — AI prediction trajectory display.
  * Shows: direction badge, confidence gauge, target price, % change, sparkline.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useAtomValue } from 'jotai';
 import { activeTickerAtom } from '@/atoms';
 import { fetchPrediction, type PredictionResult } from '@/lib/api';
@@ -13,6 +13,8 @@ export function PredictionCard() {
     const [data, setData] = useState<PredictionResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [sparkW, setSparkW] = useState(200);
 
     useEffect(() => {
         if (!ticker) { setData(null); return; }
@@ -23,6 +25,23 @@ export function PredictionCard() {
             .catch(() => setError('Failed to load prediction'))
             .finally(() => setLoading(false));
     }, [ticker]);
+
+    // Measure container width for responsive sparkline
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const measure = () => {
+            const yAxisW = 36;
+            const rAxisW = 36;
+            const padding = 24; // card body padding
+            const w = el.clientWidth - yAxisW - rAxisW - padding;
+            setSparkW(Math.max(w, 100));
+        };
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [data]);
 
     if (!ticker) return (
         <div className="card prediction-card prediction-empty">
@@ -60,10 +79,9 @@ export function PredictionCard() {
     const min = Math.min(...data.trajectory);
     const max = Math.max(...data.trajectory);
     const range = max - min || 1;
-    const sparkH = 60;
-    const sparkW = 200;
-    const yAxisW = 36; // left margin for y-axis labels
-    const rAxisW = 36; // right margin for target price label
+    const sparkH = 100;
+    const yAxisW = 36;
+    const rAxisW = 36;
     const totalW = sparkW + yAxisW + rAxisW;
     const sparkPoints = data.trajectory.map((v, i) => {
         const x = yAxisW + (i / (data.trajectory.length - 1)) * sparkW;
@@ -121,9 +139,9 @@ export function PredictionCard() {
                 </div>
 
                 {/* Sparkline */}
-                <div className="prediction-sparkline">
+                <div className="prediction-sparkline" ref={containerRef}>
                     <span className="prediction-spark-label">Predicted Trajectory</span>
-                    <svg width={totalW} height={sparkH + 20} viewBox={`0 0 ${totalW} ${sparkH + 20}`} className="prediction-svg">
+                    <svg width="100%" height={sparkH + 20} viewBox={`0 0 ${totalW} ${sparkH + 20}`} className="prediction-svg" preserveAspectRatio="xMidYMid meet">
                         {/* Y-axis price labels on the left */}
                         <text x={yAxisW - 4} y={Math.max(yStart + 3, 10)} fill="var(--color-text-muted)" fontSize="9" fontFamily="var(--font-mono)" textAnchor="end">
                             ${data.trajectory[0]?.toFixed(0)}
