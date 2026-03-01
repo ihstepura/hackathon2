@@ -635,7 +635,7 @@ body {
   background: var(--color-surface);
 }
 
-/* Universal AI chat sidebar */
+/* Universal AI chat sidebar — collapsible */
 .appshell-chat-sidebar {
   width: 320px;
   min-width: 280px;
@@ -644,6 +644,26 @@ body {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  transition: width 0.25s ease, min-width 0.25s ease, opacity 0.25s ease;
+}
+
+.appshell-chat-sidebar.closed {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  border-left: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.appshell-chat-sidebar.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Overlay for mobile when sidebar is open */
+.appshell-chat-overlay {
+  display: none;
 }
 
 .appshell-bottom {
@@ -655,7 +675,26 @@ body {
 /* ── RESPONSIVE ───────────────────────── */
 @media (max-width: 1280px) {
   .appshell-chat-sidebar {
-    display: none;
+    position: fixed;
+    right: 0;
+    top: 48px;
+    bottom: 0;
+    z-index: 100;
+    background: var(--color-surface);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .appshell-chat-sidebar.closed {
+    box-shadow: none;
+  }
+
+  .appshell-chat-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: 48px;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 99;
   }
 }
 
@@ -665,7 +704,7 @@ body {
   }
 
   .appshell-chat-sidebar {
-    display: none;
+    display: flex;
   }
 
   .appshell-header-center {

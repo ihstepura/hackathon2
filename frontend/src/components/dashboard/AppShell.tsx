@@ -95,15 +95,15 @@ export function AppShell({ children, rightColumn, bottomSlot }: AppShellProps) {
                     </aside>
                 )}
 
-                {/* UNIVERSAL AI CHATBOT — always present on desktop */}
-                <aside className="appshell-chat-sidebar">
+                {/* AI CHATBOT SIDEBAR — toggleable */}
+                <aside className={`appshell-chat-sidebar ${drawerOpen ? 'open' : 'closed'}`}>
                     <AIChatPanel />
                 </aside>
 
-                {/* Tablet: chatbot in drawer */}
-                <RightDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-                    <AIChatPanel />
-                </RightDrawer>
+                {/* Overlay for mobile/tablet */}
+                {drawerOpen && (
+                    <div className="appshell-chat-overlay" onClick={() => setDrawerOpen(false)} />
+                )}
             </div>
 
             {/* ── BOTTOM SLOT ───────────────────────────── */}
