@@ -590,7 +590,7 @@ body {
 }
 
 .appshell-drawer-toggle {
-  display: none;
+  display: flex;
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -598,12 +598,6 @@ body {
   cursor: pointer;
   padding: 6px;
   transition: all 0.15s;
-}
-
-@media (max-width: 1280px) {
-  .appshell-drawer-toggle {
-    display: flex;
-  }
 }
 
 .appshell-drawer-toggle:hover {
