@@ -38,12 +38,43 @@ async def ai_chat(data: dict):
     ticker = data.get("ticker", "General")
     messages = data.get("messages", [])
 
+    # Fetch real financial data to inject into context
+    data_context = ""
+    try:
+        import yfinance as yf
+        info = yf.Ticker(ticker).info
+        data_context = (
+            f"\n\nCURRENT FINANCIAL DATA FOR {ticker}:\n"
+            f"Company: {info.get('longName', ticker)}\n"
+            f"Sector: {info.get('sector', 'N/A')} | Industry: {info.get('industry', 'N/A')}\n"
+            f"Current Price: ${info.get('currentPrice', info.get('regularMarketPrice', 'N/A'))}\n"
+            f"Market Cap: ${info.get('marketCap', 'N/A'):,}\n"
+            f"P/E Ratio: {info.get('trailingPE', 'N/A')}\n"
+            f"Forward P/E: {info.get('forwardPE', 'N/A')}\n"
+            f"P/B Ratio: {info.get('priceToBook', 'N/A')}\n"
+            f"EPS (TTM): ${info.get('trailingEps', 'N/A')}\n"
+            f"Revenue (TTM): ${info.get('totalRevenue', 'N/A'):,}\n"
+            f"Net Income: ${info.get('netIncomeToCommon', 'N/A'):,}\n"
+            f"Free Cash Flow: ${info.get('freeCashflow', 'N/A'):,}\n"
+            f"Operating Margin: {info.get('operatingMargins', 'N/A')}\n"
+            f"Net Margin: {info.get('profitMargins', 'N/A')}\n"
+            f"ROE: {info.get('returnOnEquity', 'N/A')}\n"
+            f"D/E Ratio: {info.get('debtToEquity', 'N/A')}\n"
+            f"Dividend Yield: {info.get('dividendYield', 'N/A')}\n"
+            f"Beta: {info.get('beta', 'N/A')}\n"
+            f"52W High: ${info.get('fiftyTwoWeekHigh', 'N/A')} | 52W Low: ${info.get('fiftyTwoWeekLow', 'N/A')}\n"
+            f"50-Day Avg: ${info.get('fiftyDayAverage', 'N/A')} | 200-Day Avg: ${info.get('twoHundredDayAverage', 'N/A')}\n"
+        )
+    except Exception:
+        data_context = f"\n\n(No live data available for {ticker})\n"
+
     system_instruction = (
-        f"You are the AlphaFilter 'Council of Bots', an elite financial summarization engine focusing on {ticker}. "
-        "Your strict mandate is to OBJECTIVELY SUMMARIZE technicals, fundamentals, and alternative data sentiment. "
-        "CRITICAL RULE: You must absolutely REFUSE to make any predictions about future stock price action. "
-        "If asked to predict, state that you are a summarization engine and cannot predict the future. "
-        "Keep responses sharp, analytical, and format numbers optimally using markdown."
+        f"You are the AlphaFilter 'Council of Bots', an elite financial analysis engine focusing on {ticker}. "
+        "You have access to real-time financial data provided below. "
+        "Use the ACTUAL NUMBERS from the data when answering — never use placeholders like ### or N/A if real data is available. "
+        "Keep responses sharp, analytical, and well-structured. "
+        "Format numbers properly (e.g., $3.88T, $264.18, 33.44x). "
+        + data_context
     )
 
     formatted = [{"role": "system", "content": system_instruction}]
